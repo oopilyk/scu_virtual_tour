@@ -5,10 +5,10 @@ import { FrameView } from './Frame';
 import bunnies from '../../assets/bunnies.json';
 import sourceDescs from '../../assets/sources.json';
 import hotspots from '../../assets/hotspots.json';
-import { createTagsClosure, tagsType } from '../scene-components/TagsComponent';
 export const ModelSid = 'eE6srFdgFSR';
 import icon2 from '../images/tags/big1.jpg';
 import { getImage } from '../utils/CustomizeTags';
+import { createSignClosure, signType } from '../scene-components/SignComponent';
 
 
 interface Props {}
@@ -95,10 +95,6 @@ export class MainView extends Component<Props, State> {
  
   async componentDidMount() {
     this.sdk = await GetSDK('sdk-iframe', this.sdkKey);
-    const stylesheet = document.createElement("link");
-    stylesheet.rel = 'stylesheet';
-    stylesheet.type = 'text/css';
-    stylesheet.href = './assets/App.css';
     addMattertagNode1(this.sdk, false);
     (window as any).getPose = this.sdk.Camera.getPose;
     const sensor = await this.sdk.Sensor.createSensor(this.sdk.Sensor.SensorType.CAMERA);
@@ -142,7 +138,7 @@ export class MainView extends Component<Props, State> {
 
     await Promise.all([
       this.sdk.Scene.register(navPathType, createNavPathClosure(this.sdk)),
-      this.sdk.Scene.register(tagsType, createTagsClosure(this.sdk)),
+      this.sdk.Scene.register(signType, createSignClosure(this.sdk))
     ]);
 
     const nodes = await this.sdk.Scene.deserialize(JSON.stringify(bunnies));
