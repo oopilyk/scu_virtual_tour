@@ -1,6 +1,6 @@
 import { Dict } from '@mp/core';
 import { SceneComponent, ComponentInteractionType } from '@mp/common';
-import { Camera, Mesh, Object3D, Vector3 } from 'three';
+import { Camera } from 'three';
 
 interface Inputs {
   image: string,
@@ -18,9 +18,8 @@ class SignComponent extends SceneComponent {
   private cameraPose: any = null;
   private iframe: HTMLElement = null;
   private projectionCam = new Camera();
-  private sphere: Mesh|null = null;
   private hovered = false;
-  private sphereWP = new Vector3();
+  private clicked = false;
 
   inputs: Inputs = {
     image: "",
@@ -38,7 +37,7 @@ class SignComponent extends SceneComponent {
     captured: true,
   }
 
-  constructor( private sdk: any) {
+  constructor() {
     super();
   }
 
@@ -46,7 +45,7 @@ class SignComponent extends SceneComponent {
     const { image, width, height, pRotationY, pRotationZ, mRotationX, mRotationY } = this.inputs;
     let THREE = this.context.three;
     const planeGeometry = new THREE.PlaneGeometry(width, height);
-    const texture = new THREE.TextureLoader().load(`/images/tags/${image}`);
+    const texture = new THREE.TextureLoader().load(`/assets/images/tags/${image}`);
     var mat = new THREE.MeshBasicMaterial({
       transparent: true,
       opacity: 1,
@@ -70,11 +69,9 @@ class SignComponent extends SceneComponent {
        console.log(this.iframe);
        console.log(this.projectionCam);
        console.log(this.hovered);
+       console.log(this.clicked);
        if (eventType === ComponentInteractionType.CLICK) {
-        this.sphere.getWorldPosition(this.sphereWP);
-        this.notify(eventType, {
-          position: this.sphereWP,
-        });
+        this.clicked = eventData.click
    
       }
       if (eventType === ComponentInteractionType.HOVER) {
@@ -86,8 +83,8 @@ class SignComponent extends SceneComponent {
 
 export const signType = 'vt.sign';
 
-export const createSignClosure = function(sdk: any) {
+export const createSignClosure = function() {
   return function() {
-    return new SignComponent(sdk);
+    return new SignComponent();
   }
 }

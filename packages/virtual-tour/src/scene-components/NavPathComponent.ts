@@ -1,6 +1,7 @@
 import { Dict } from '@mp/core';
 import { SceneComponent, ComponentInteractionType } from '@mp/common';
-import { Camera, Mesh, Object3D, Vector3 } from 'three';
+import { Camera, Mesh, MeshBasicMaterial, Object3D, SphereGeometry, Vector3 } from 'three';
+import { setMessage, clearMessage } from '../utils/CustomizeMsg';
 
 interface Inputs {
   size: number,
@@ -22,8 +23,8 @@ class NavPathComponent extends SceneComponent {
 
   inputs: Inputs = {
     size: 1.0,
-    color: 0xffff00,
-    lineColor: 0x000000,
+    color: 0xFF00FF,
+    lineColor: 0xFF00FF,
     hoverOpacity: 0.8,
     name: "room"
   };
@@ -53,21 +54,20 @@ class NavPathComponent extends SceneComponent {
   private makeSphere() {
     const THREE = this.context.three;
 
-    // if (this.sphere) {
-    //   this.root.remove(this.sphere);
-    //   (this.sphere.material as MeshBasicMaterial).dispose();
-    //   (this.sphere.geometry as SphereGeometry).dispose();
-    //   this.sphere = null;
-    // }
+    if (this.sphere) {
+      this.root.remove(this.sphere);
+      (this.sphere.material as MeshBasicMaterial).dispose();
+      (this.sphere.geometry as SphereGeometry).dispose();
+      this.sphere = null;
+    }
 
     const sphereGeometry = new THREE.SphereGeometry(0.5 * this.inputs.size, 64, 100);
 
-    var sphereMaterial = new THREE.MeshBasicMaterial({
+    var sphereMaterial = new THREE.MeshStandardMaterial({
       transparent: false,
       color: this.inputs.color,
       opacity: this.opacity,
-      depthTest: false,
-      depthWrite: false,
+      roughness: 4
     });
 
     this.sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
@@ -81,7 +81,10 @@ class NavPathComponent extends SceneComponent {
        console.log(this.hovered);
        if (eventType === ComponentInteractionType.CLICK) {
         this.sphere.getWorldPosition(this.sphereWP);
-        alert(this.inputs.name);
+        setMessage(this.inputs.name);
+				setTimeout(() => 
+					clearMessage()
+				, 5000);
         this.notify(eventType, {
           position: this.sphereWP,
         });
@@ -106,3 +109,4 @@ export const createNavPathClosure = function(sdk: any) {
     return new NavPathComponent(sdk);
   }
 }
+

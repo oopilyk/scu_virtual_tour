@@ -1,31 +1,23 @@
 import React, { Component } from 'react';
-import { GetSDK, sdkKey } from '@mp/common';
+import { GetSDK, makeSphereSource, sdkKey, sphereSourceType } from '@mp/common';
 import { createNavPathClosure, navPathType } from '../scene-components/NavPathComponent';
 import { FrameView } from './Frame';
-import bunnies from '../../assets/bunnies.json';
+import sweeps from '../../assets/sweeps.json';
+import signs from '../../assets/signs.json';
 import sourceDescs from '../../assets/sources.json';
 import hotspots from '../../assets/hotspots.json';
 export const ModelSid = 'eE6srFdgFSR';
 import icon2 from '../images/tags/big1.jpg';
 import { getImage } from '../utils/CustomizeTags';
 import { createSignClosure, signType } from '../scene-components/SignComponent';
+import { clearMessage, setMessage } from '../utils/CustomizeMsg';
+import {randomColor} from '../utils/colorUtil';
 
 
 interface Props {}
 
 interface State {
   
-}
-
-const setMessage = function(element: HTMLElement, message: string) {
-  element.classList.remove('hidden');
-  element.classList.add('visible');
-  element.innerText = message;
-}
-
-const clearMessage = function(element: HTMLElement) {
-  element.classList.remove('visible');
-  element.classList.add('hidden');
 }
 
 function addMattertagNode1(sdk: any, isMobile: boolean) {
@@ -50,7 +42,6 @@ function addMattertagNode1(sdk: any, isMobile: boolean) {
   });
   // @ts-ignore 
   sdk.Mattertag.add(matterTags).then(function (mattertagIds) {
-    console.log(mattertagIds);
     sdk.Mattertag.getData()
       .then(function (mattertags: { sid: any, label: any }[]) {
 
@@ -63,6 +54,23 @@ function addMattertagNode1(sdk: any, isMobile: boolean) {
         console.log(error);
       });
   });
+}
+
+const makeLight = (sceneObject : any , color:string, position:any) => {
+  // add light
+  const lightsNode = sceneObject.addNode();
+
+  const ambientLightComponet = lightsNode.addComponent("mp.ambientLight", {
+    intensity: 0.5,
+    // color: { r: 1.0, g: 0, b: 0 },
+  });
+ sceneObject.addInputPath(
+    ambientLightComponet,
+    "intensity",
+    "ambientIntensity"
+  );
+  lightsNode.position.set(position.x, position.y, position.z);
+  lightsNode.start();
 }
 
 export class MainView extends Component<Props, State> {
@@ -96,7 +104,8 @@ export class MainView extends Component<Props, State> {
   async componentDidMount() {
     this.sdk = await GetSDK('sdk-iframe', this.sdkKey);
     addMattertagNode1(this.sdk, false);
-    (window as any).getPose = this.sdk.Camera.getPose;
+   
+    // add sensor for important room
     const sensor = await this.sdk.Sensor.createSensor(this.sdk.Sensor.SensorType.CAMERA);
     sensor.showDebug(true);
 
@@ -118,12 +127,10 @@ export class MainView extends Component<Props, State> {
           );
         }
         if (inRange.length > 0) {
-          console.log("I am in range");
-          setMessage(document.getElementById('text'), inRange.toString());
+          setMessage(inRange.toString());
         }
         else {
-          console.log("I am out of range");
-          clearMessage(document.getElementById('text'));
+          clearMessage();
         }
       }
     });
@@ -138,12 +145,45 @@ export class MainView extends Component<Props, State> {
 
     await Promise.all([
       this.sdk.Scene.register(navPathType, createNavPathClosure(this.sdk)),
-      this.sdk.Scene.register(signType, createSignClosure(this.sdk))
+      this.sdk.Scene.register(signType, createSignClosure()),
+      this.sdk.Scene.register(sphereSourceType, makeSphereSource(this.sdk))
     ]);
 
-    const nodes = await this.sdk.Scene.deserialize(JSON.stringify(bunnies));
-    for (let i = 0; i < nodes.length; ++i) {
-      nodes[i].start();
+    const [sceneObject] = await this.sdk.Scene.createObjects(1);
+
+    var currentNode = sceneObject.addNode("node-obj-4");
+    const sweep_nodes = await this.sdk.Scene.deserialize(JSON.stringify(sweeps));
+    this.sdk.Sweep.current.subscribe(function (currentSweep: any) {
+			// Change to the current sweep has occurred.
+
+    // add all the navigation sweeps
+    for (let i = 0; i < sweep_nodes.length; ++i) {
+      let pos = sweep_nodes[i].position;
+      makeLight(sceneObject, null, { x: pos.x, y: pos.y, z: pos.z});
+      if(currentSweep.position.x!== pos.x && currentSweep.position.z!== pos.z) {
+        sweep_nodes[i].start();
+      } else {
+        console.log("same as current");
+      }
+    }
+    if (currentSweep.sid === '') {
+      console.log('Not currently stationed at a sweep position');
+    } else {
+      const color = randomColor(1, 0, 0); 
+      const initObj = {
+        color,
+        size: 2.0
+      };  
+		  currentNode.addComponent(navPathType, initObj);
+      currentNode.position.set(currentSweep.position.x, currentSweep.position.y + 10, currentSweep.position.z);
+      currentNode.start();
+    }
+		});
+
+    // add all the signs
+    const sign_nodes = await this.sdk.Scene.deserialize(JSON.stringify(signs));
+    for (let i = 0; i < sign_nodes.length; ++i) {
+      sign_nodes[i].start();
     }
   }
 
@@ -157,5 +197,3 @@ export class MainView extends Component<Props, State> {
     );
   }
 }
-
-

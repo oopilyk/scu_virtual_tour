@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
-import { IContext, IDialogUser } from '../interfaces';
-import { AppContext } from '../AppContext';
+import { IDialogUser } from '../interfaces';
 import styled from '@emotion/styled';
 
 const styles = {
@@ -30,8 +29,7 @@ interface State {
 }
 
 export class FrameView extends Component<Props, State> {
-  context: IContext;
-  static contextType = AppContext;
+
 
   constructor(props: Props){
     super(props);
@@ -41,11 +39,6 @@ export class FrameView extends Component<Props, State> {
   }
 
   componentDidMount() {
-    this.context.frameOverlay.subscribe((user: IDialogUser) => {
-      this.setState({
-        user,
-      });
-    });
   }
   
   public render() {
